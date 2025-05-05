@@ -5,12 +5,4 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base:  '/finances/',
   plugins: [react()],
-  build: {
-    outDir: 'dist',
-  },
-  resolve: {
-    alias: {
-      '@': '/src'
-    }
-  },
 })
