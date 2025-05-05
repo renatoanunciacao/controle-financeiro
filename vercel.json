@@ -1,16 +1,9 @@
 {
     "rewrites": [
-        {
-            "source": "/finances(/.*)?",
-            "destination": "/index.html"
-        },
-        {
-          "source": "/finances/",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/finances/:path((?!.*\\.).*)",
-          "destination": "/index.html"
-        }
+      {
+        "source": "/finances/(.*)",
+        "destination": "/finances/index.html"
+      }
     ]
-}
+  }
+  
