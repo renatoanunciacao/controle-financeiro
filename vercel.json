@@ -1,8 +1,8 @@
 {
     "rewrites": [
       {
-        "source": "/finances/:path*",
-        "destination": "/finances/index.html"
+        "source": "/:path*",
+        "destination": "/"
       }
     ]
   }
