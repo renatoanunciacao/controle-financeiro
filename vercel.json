@@ -7,7 +7,7 @@
     ],
     "rewrites": [
         {
-            "source": "/finances/:path*",
+            "source": "/finances/*",
             "destination": "/finances/index.html"
         }
     ]
