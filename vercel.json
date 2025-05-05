@@ -1,16 +1,19 @@
 {
+    "builds": [
+      {
+        "src": "dist/**",
+        "use": "@vercel/static"
+      }
+    ],
     "rewrites": [
-        {
-            "source": "/finances/(.*)",
-            "destination": "/finances/index.html"
-        },
-        {
-            "source": "/finances/",
-            "destination": "/index.html"
-        },
-        {
-            "source": "/finances/:path((?!.*\\.).*)",
-            "destination": "/index.html"
-        }
+      {
+        "source": "/finances/(.*)",
+        "destination": "/finances/index.html"
+      },
+      {
+        "source": "/finances/*",
+        "destination": "/dist/finances/index.html"
+      }
     ]
-}
+  }
+  
