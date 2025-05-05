@@ -7,17 +7,16 @@ interface routeProps {
     component: React.FC;
 }
 
-const baseUrl: string = "/finances";
 
 export const routes: routeProps[] = [
     {
         id: 0,
-        path: `${baseUrl}/login`,
+        path: `/login`,
         component: Login,
     },
     {
         id: 1,
-        path: `${baseUrl}/home`,
+        path: `/home`,
         component: Home,
     },
 
