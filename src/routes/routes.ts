@@ -11,12 +11,12 @@ interface routeProps {
 export const routes: routeProps[] = [
     {
         id: 0,
-        path: `/login`,
+        path: `/finances/login`,
         component: Login,
     },
     {
         id: 1,
-        path: `/home`,
+        path: `/finances/home`,
         component: Home,
     },
 
