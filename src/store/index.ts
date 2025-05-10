@@ -33,7 +33,11 @@ type InstallmentExpense = {
   id: string;
   name: string;
   amount: number;
+  totalMonths: number;
+  currentMonth: number;
   remainingMonths: number;
+  cardName: string;
+  dueDate: string;
 };
 
 type MonthlyData = {
@@ -53,7 +57,7 @@ type AppState = {
   dataByMonth: Record<string, MonthlyData>;
   setMonthlyIncome: (value: number) => void;
   addFixedExpense: (expense: Omit<FixedExpense, 'id'>) => void; // Omit 'id' from the argument
-  addInstallmentExpense: (expense: InstallmentExpense) => void;
+  addInstallmentExpense: (expense: Omit<InstallmentExpense, 'id'>) => void;
   calculateTotalFixedExpenses: (month?: string) => number;
 };
 
@@ -112,19 +116,26 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      addInstallmentExpense: (expense) => {
+      addInstallmentExpense: (expense: Omit<InstallmentExpense, 'id'>) => {
         const { selectedMonth, dataByMonth } = get();
         const monthData = dataByMonth[selectedMonth] || {
           income: 0,
           fixedExpenses: [],
           installmentExpenses: [],
         };
+
+        const nextId = monthData.installmentExpenses.length
+          ? Math.max(...monthData.installmentExpenses.map((e) => +e.id)) + 1
+          : 1;
+
+        const newExpense: InstallmentExpense = { ...expense, id: nextId.toString() };
+
         set({
           dataByMonth: {
             ...dataByMonth,
             [selectedMonth]: {
               ...monthData,
-              installmentExpenses: [...monthData.installmentExpenses, expense],
+              installmentExpenses: [...monthData.installmentExpenses, newExpense],
             },
           },
         });
@@ -135,10 +146,10 @@ export const useAppStore = create<AppState>()(
         const m = month || selectedMonth;
         const monthData = dataByMonth[m];
         if (!monthData) return 0;
-      
+
         // Soma todas as despesas fixas
         const totalFixed = monthData.fixedExpenses.reduce((sum, e) => sum + e.value, 0);
-      
+
         // Retorna a soma total das despesas fixas
         return totalFixed;
       },

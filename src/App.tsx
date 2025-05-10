@@ -1,4 +1,4 @@
-import { HashRouter  } from 'react-router-dom'
+import { BrowserRouter as Router   } from 'react-router-dom'
 import './App.css'
 import Layout from './layout'
 import { globalStyles } from './styles/global'
@@ -8,9 +8,9 @@ function App() {
 
 
   return (
-    <HashRouter>   
+    <Router>   
         <Layout />
-    </HashRouter>
+    </Router>
   )
 }
 

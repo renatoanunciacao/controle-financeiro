@@ -34,7 +34,7 @@ const GoogleLoginButton: React.FC = () => {
                 picture: userData.picture,
               });
       
-              navigate('/home');
+              navigate('/finances/home');
             } catch (error) {
               console.error('Login error:', error);
             }

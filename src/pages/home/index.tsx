@@ -12,9 +12,12 @@ const Home: React.FC = () => {
   const setMonthlyIncome = useAppStore((state) => state.setMonthlyIncome);
   const [draftRenda, setDraftRenda] = useState(monthlyIncome);
   const [isOpen, setIsOpen] = useState(false);
+  const [isOpenInstallmentExpenses, setIsOpenInstallmentExpenses] = useState(false);
 
   const addFixedExpense = useAppStore((s) => s.addFixedExpense);
+  const addInstallmentExpense = useAppStore((s) => s.addInstallmentExpense);
   const expenses = useAppStore((s) => s.dataByMonth[selectedMonth]?.fixedExpenses || []);
+  const installmentExpenses = useAppStore((state) => state.dataByMonth[selectedMonth]?.installmentExpenses || []);
 
   const totalFixedExpenses = useAppStore.getState().calculateTotalFixedExpenses();
 
@@ -119,14 +122,71 @@ const Home: React.FC = () => {
       {/* Parcelamentos */}
       <Card>
         <Title>Parcelamentos</Title>
-        <div>
-          <p>Celular - 3/6</p>
-          <ProgressBar>
-            <ProgressFill style={{ width: '50%' }} />
-          </ProgressBar>
-        </div>
-        <Button>Adicionar Compra Parcelada</Button>
+        {installmentExpenses.map((item) => (
+          <div key={item.id} style={{ marginBottom: 12 }}>
+            <p>
+              {item.name} – {item.remainingMonths}/{item.totalMonths} – Cartão: {item.cardName}
+            </p>
+            <ProgressBar>
+              <ProgressFill style={{ width: `${(1 - item.remainingMonths / item.totalMonths) * 100}%` }} />
+            </ProgressBar>
+          </div>
+        ))}
+        <Button onClick={() => setIsOpenInstallmentExpenses(true)}>Adicionar Compra Parcelada</Button>
       </Card>
+
+      <Modal isOpen={isOpenInstallmentExpenses} onClose={() => setIsOpenInstallmentExpenses(false)}>
+        <h2>Adicionar Despesa Parcelada</h2>
+        <Form onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+
+          const name = formData.get('name') as string;
+          const amount = Number(formData.get('amount'));
+          const totalMonths = Number(formData.get('totalMonths'));
+          const currentMonth = Number(formData.get('currentMonth'));
+          const remainingMonths = totalMonths - currentMonth;
+          const cardName = formData.get('cardName') as string;
+          const dueDate = formData.get('dueDate') as string;
+
+          if (!name || isNaN(amount) || isNaN(totalMonths) || !cardName || !dueDate) return;
+
+          addInstallmentExpense({
+            name,
+            amount,
+            totalMonths,
+            currentMonth,
+            remainingMonths,
+            cardName,
+            dueDate,
+          });
+
+
+
+          setIsOpenInstallmentExpenses(false);
+          e.currentTarget.reset();
+        }}>
+          <InputField type="text" name="name" placeholder="Nome da despesa" required />
+          <InputField type="number" name="amount" placeholder="Valor da parcela" required />
+          <InputField type="number" name="totalMonths" placeholder="Quantidade de parcelas" required />
+          <InputField
+            type="number"
+            name="currentMonth"
+            placeholder="Parcela atual (ex: 1)"
+            min="1"
+            required
+          />
+          <InputField type="text" name="cardName" placeholder="Nome do cartão" required />
+          <InputField type="date" name="dueDate" required />
+
+          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+            <Button type="button" onClick={() => setIsOpen(false)} css={{ alignItems: '', width: '200px' }}>Cancelar</Button>
+            <Button type="submit" css={{ alignItems: 'flex-end', width: '200px' }}>Salvar</Button>
+          </div>
+
+        </Form>
+      </Modal>
+
 
       {/* Resumo Financeiro */}
       <Card>

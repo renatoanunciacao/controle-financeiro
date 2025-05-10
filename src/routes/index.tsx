@@ -11,7 +11,7 @@ const AppRoutes: React.FC = () => {
     return (
       <Routes>
         <Route
-          path="/login"
+          path="/finances/login"
           element={
             <PublicRoute>
               <Login />
@@ -20,7 +20,7 @@ const AppRoutes: React.FC = () => {
         />
 
         <Route
-          path="/home"
+          path="/finances/home"
           element={
             <PrivateRoute>
               <Home />
@@ -28,7 +28,7 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        <Route path="*" element={<Navigate replace to="/login" />} />
+        <Route path="*" element={<Navigate replace to="/finances/login" />} />
       </Routes>
     )
   }

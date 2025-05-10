@@ -10,7 +10,7 @@ type PublicRouteProps = {
 const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   const user = useAppStore((state) => state.user);
 
-  return user ? <Navigate to="/finances/home" replace /> : children;
+  return user ? <Navigate to="/home" replace /> : children;
 };
 
 export default PublicRoute;
