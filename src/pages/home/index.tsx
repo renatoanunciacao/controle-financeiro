@@ -252,7 +252,8 @@ const Home: React.FC = () => {
       {/* Saldo após calcular todas as contas */}
       <Card>
         <Title>Sobra do salário</Title>
-        <h3 style={{ fontSize: '2rem', color: '#1976d2' }}>
+        
+        <h3 style={{ fontSize: '2rem', color: monthlyIncome - totalFixedExpenses < 0 ? 'red': '#1976d2' }}>
           R$ {(monthlyIncome - totalFixedExpenses).toFixed(2)}
         </h3>
       </Card>
