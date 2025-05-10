@@ -35,6 +35,8 @@ Um app de finanças pessoais onde o usuário pode:
 ### RF05 – Autenticação via Google
 - Usuário faz login exclusivamente com sua conta Google.
 - Dados são salvos por usuário autenticado.
+- Após o login, os dados exibidos devem ser específicos daquele usuário.
+
 
 ### RF06 – Persistência dos Dados
 - Dados do usuário são salvos no `localStorage`.

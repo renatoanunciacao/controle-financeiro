@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { Button, Card, Container, ProgressBar, ProgressFill, Select, Title } from './styles'
+import { Button, Card, Container, Form, ProgressBar, ProgressFill, Select, Title } from './styles'
 import { InputField } from '../../components/InputField'
 import { useAppStore } from '../../store';
+import Modal from '../../components/modal';
 
 const Home: React.FC = () => {
 
@@ -10,12 +11,18 @@ const Home: React.FC = () => {
   const monthlyIncome = useAppStore((state) => state.dataByMonth[selectedMonth]?.income);
   const setMonthlyIncome = useAppStore((state) => state.setMonthlyIncome);
   const [draftRenda, setDraftRenda] = useState(monthlyIncome);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const addFixedExpense = useAppStore((s) => s.addFixedExpense);
+  const expenses = useAppStore((s) => s.dataByMonth[selectedMonth]?.fixedExpenses || []);
+
+  const totalFixedExpenses = useAppStore.getState().calculateTotalFixedExpenses();
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const date = new Date();
     date.setMonth(i);
 
-    const value = date.toISOString().slice(0, 7); 
+    const value = date.toISOString().slice(0, 7);
     const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
     return { value, label };
@@ -41,7 +48,7 @@ const Home: React.FC = () => {
               </option>
             ))}
           </Select>
-       
+
           <Title>Renda Mensal</Title>
           <InputField type="number" placeholder="Informe sua renda" value={draftRenda} onChange={(e) => setDraftRenda(Number(e.target.value))} disabled={monthlyIncome !== 0} />
           <Button onClick={handleSave} css={{ alignSelf: 'flex-end' }}>Salvar</Button>
@@ -54,11 +61,60 @@ const Home: React.FC = () => {
       <Card>
         <Title>Despesas Fixas</Title>
         <div>
-          <p>Aluguel - R$ 1.200,00 - Vencimento: 05</p>
-          <p>Internet - R$ 100,00 - Vencimento: 10</p>
+          {expenses && expenses.length > 0 ? (
+            expenses.map((exp, i) => {
+              const dueDate = new Date(exp.dueDate); // Converte a data de vencimento para objeto Date
+              const day = dueDate.getDate().toString().padStart(2, '0'); // Obtém o dia (com 2 dígitos)
+              const month = (dueDate.getMonth() + 1).toString().padStart(2, '0'); // Obtém o mês (com 2 dígitos)
+
+              return (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'nowrap' }}>
+                  <span style={{ flex: 1, fontWeight: 'bold', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                    {exp.name}
+                  </span> {/* Nome da despesa */}
+                  <span style={{ width: '100px', textAlign: 'right', flexShrink: 0 }}>R$ {exp.value.toFixed(2)}</span> {/* Valor da despesa */}
+                  <span style={{ width: '160px', textAlign: 'right', flexShrink: 0 }}>Vencimento: {day}/{month}</span> {/* Data de vencimento */}
+                </div>
+              );
+            })
+          ) : (
+            <p>Não há despesas registradas para este mês.</p> // Mensagem quando não há despesas
+          )}
         </div>
-        <Button>Adicionar Despesa</Button>
+        <Button onClick={() => setIsOpen(true)}>Adicionar Despesa</Button>
       </Card>
+
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
+        <h2>Adicionar Despesa</h2>
+        <Form onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+
+          const name = formData.get('name') as string;
+          const value = Number(formData.get('value'));
+          const dueDate = formData.get('dueDate') as string;
+
+          if (!name || isNaN(value) || !dueDate) return;
+
+          addFixedExpense({
+            name,
+            value,
+            dueDate,
+          });
+
+          setIsOpen(false);
+          e.currentTarget.reset();
+        }}>
+          <InputField type="text" name="name" placeholder="Nome da despesa" required />
+          <InputField type="number" name="value" placeholder="Valor da despesa" required />
+          <InputField type="date" name="dueDate" required />
+          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+            <Button type="button" onClick={() => setIsOpen(false)} css={{ alignItems: '', width: '200px' }}>Cancelar</Button>
+            <Button type="submit" css={{ alignItems: 'flex-end', width: '200px' }}>Salvar</Button>
+          </div>
+
+        </Form>
+      </Modal>
 
       {/* Parcelamentos */}
       <Card>
@@ -74,8 +130,8 @@ const Home: React.FC = () => {
 
       {/* Resumo Financeiro */}
       <Card>
-        <Title>Resumo Financeiro</Title>
-        <h3 style={{ fontSize: '2rem', color: '#1976d2' }}>R$ 2.500,00</h3>
+        <Title>Minhas contas</Title>
+        <h3 style={{ fontSize: '2rem', color: '#1976d2' }}>R$ {totalFixedExpenses.toFixed(2)}</h3>
       </Card>
     </Container>
   )

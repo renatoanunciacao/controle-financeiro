@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, PersistStorage } from 'zustand/middleware';
 
-
 function createStorageAdapter<T>(storage: Storage): PersistStorage<T> {
   return {
     getItem: (name) => {
@@ -24,9 +23,10 @@ type User = {
 };
 
 type FixedExpense = {
-  id: string;
+  id: string; // ID como string
   name: string;
-  amount: number;
+  value: number;
+  dueDate: string;
 };
 
 type InstallmentExpense = {
@@ -42,8 +42,6 @@ type MonthlyData = {
   installmentExpenses: InstallmentExpense[];
 };
 
-
-
 type AppState = {
   user: User | null;
   setUser: (user: User) => void;
@@ -54,9 +52,9 @@ type AppState = {
 
   dataByMonth: Record<string, MonthlyData>;
   setMonthlyIncome: (value: number) => void;
-  addFixedExpense: (expense: FixedExpense) => void;
+  addFixedExpense: (expense: Omit<FixedExpense, 'id'>) => void; // Omit 'id' from the argument
   addInstallmentExpense: (expense: InstallmentExpense) => void;
-  calculateRemaining: (month?: string) => number;
+  calculateTotalFixedExpenses: (month?: string) => number;
 };
 
 const localStorageAdapter = createStorageAdapter<AppState>(localStorage);
@@ -68,7 +66,7 @@ export const useAppStore = create<AppState>()(
       setUser: (user) => set({ user }),
       clearUser: () => set({ user: null }),
 
-      selectedMonth: new Date().toISOString().slice(0, 7), 
+      selectedMonth: new Date().toISOString().slice(0, 7), // Formato: YYYY-MM
       setSelectedMonth: (month) => set({ selectedMonth: month }),
 
       dataByMonth: {},
@@ -76,7 +74,7 @@ export const useAppStore = create<AppState>()(
       setMonthlyIncome: (income) => {
         const { selectedMonth, dataByMonth } = get();
         const monthData = dataByMonth[selectedMonth] || {
-          monthlyIncome: 0,
+          income: 0,
           fixedExpenses: [],
           installmentExpenses: [],
         };
@@ -95,12 +93,20 @@ export const useAppStore = create<AppState>()(
           fixedExpenses: [],
           installmentExpenses: [],
         };
+
+        // Gerar ID incremental (como string)
+        const nextId = monthData.fixedExpenses.length
+          ? (Math.max(...monthData.fixedExpenses.map((e) => parseInt(e.id))) + 1).toString()
+          : '1'; // Começa em 1 se não houver despesas ainda, e garante que seja string
+
+        const newExpense = { ...expense, id: nextId };
+
         set({
           dataByMonth: {
             ...dataByMonth,
             [selectedMonth]: {
               ...monthData,
-              fixedExpenses: [...monthData.fixedExpenses, expense],
+              fixedExpenses: [...monthData.fixedExpenses, newExpense],
             },
           },
         });
@@ -124,19 +130,22 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      calculateRemaining: (month) => {
+      calculateTotalFixedExpenses: (month) => {
         const { selectedMonth, dataByMonth } = get();
         const m = month || selectedMonth;
         const monthData = dataByMonth[m];
         if (!monthData) return 0;
-        const totalFixed = monthData.fixedExpenses.reduce((sum, e) => sum + e.amount, 0);
-        const totalInstallments = monthData.installmentExpenses.reduce((sum, e) => sum + e.amount, 0);
-        return monthData.income - totalFixed - totalInstallments;
+      
+        // Soma todas as despesas fixas
+        const totalFixed = monthData.fixedExpenses.reduce((sum, e) => sum + e.value, 0);
+      
+        // Retorna a soma total das despesas fixas
+        return totalFixed;
       },
     }),
     {
       name: 'app-session',
-      storage: localStorageAdapter
+      storage: localStorageAdapter, // Usando o adaptador de storage
     }
   )
 );

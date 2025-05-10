@@ -1,6 +1,13 @@
 
 import { styled } from '@stitches/react';
 
+
+export const Form = styled('form', {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+})
+
 export const Container = styled('div', {
     padding: '2rem',
     display: 'grid',
