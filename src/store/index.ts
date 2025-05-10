@@ -58,7 +58,7 @@ type AppState = {
   setMonthlyIncome: (value: number) => void;
   addFixedExpense: (expense: Omit<FixedExpense, 'id'>) => void; // Omit 'id' from the argument
   addInstallmentExpense: (expense: Omit<InstallmentExpense, 'id'>) => void;
-  calculateTotalFixedExpenses: (month?: string) => number;
+  calculateTotalExpenses: (month?: string) => number;
 };
 
 const localStorageAdapter = createStorageAdapter<AppState>(localStorage);
@@ -141,7 +141,7 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      calculateTotalFixedExpenses: (month) => {
+      calculateTotalExpenses: (month) => {
         const { selectedMonth, dataByMonth } = get();
         const m = month || selectedMonth;
         const monthData = dataByMonth[m];
@@ -150,8 +150,10 @@ export const useAppStore = create<AppState>()(
         // Soma todas as despesas fixas
         const totalFixed = monthData.fixedExpenses.reduce((sum, e) => sum + e.value, 0);
 
+        const totalInstallmentExpenses = monthData.installmentExpenses.reduce((sum, e) => sum + e.amount, 0);
+
         // Retorna a soma total das despesas fixas
-        return totalFixed;
+        return totalFixed + totalInstallmentExpenses;
       },
     }),
     {

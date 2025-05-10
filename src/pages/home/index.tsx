@@ -21,7 +21,7 @@ const Home: React.FC = () => {
   const expenses = monthData?.fixedExpenses ?? []
   const installmentExpenses = monthData?.installmentExpenses ?? []
 
-  const totalFixedExpenses = useAppStore.getState().calculateTotalFixedExpenses?.() ?? 0
+  const totalFixedExpenses = useAppStore.getState().calculateTotalExpenses?.() ?? 0
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const date = new Date()
@@ -81,7 +81,7 @@ const Home: React.FC = () => {
       {/* Despesas Fixas */}
       <Card>
         <Title>Despesas Fixas</Title>
-        <div>
+        <div style={{     overflowY: 'scroll', scrollbarWidth: 'thin', height: '158px'}}>
           {expenses.length > 0 ? (
             expenses.map((exp, i) => {
               const dueDate = new Date(exp.dueDate)
@@ -246,6 +246,14 @@ const Home: React.FC = () => {
         <Title>Minhas contas</Title>
         <h3 style={{ fontSize: '2rem', color: '#1976d2' }}>
           R$ {totalFixedExpenses.toFixed(2)}
+        </h3>
+      </Card>
+
+      {/* Saldo após calcular todas as contas */}
+      <Card>
+        <Title>Sobra do salário</Title>
+        <h3 style={{ fontSize: '2rem', color: '#1976d2' }}>
+          R$ {(monthlyIncome - totalFixedExpenses).toFixed(2)}
         </h3>
       </Card>
     </Container>
