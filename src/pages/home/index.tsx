@@ -5,23 +5,24 @@ import { useAppStore } from '../../store'
 import Modal from '../../components/modal'
 
 const Home: React.FC = () => {
-  const selectedMonth = useAppStore((state) => state?.selectedMonth)
-  const setSelectedMonth = useAppStore((state) => state?.setSelectedMonth)
-  const dataByMonth = useAppStore((state) => state?.dataByMonth ?? {})
-  const monthData = selectedMonth ? dataByMonth[selectedMonth] : undefined
+  const selectedMonth = useAppStore((state) => state?.selectedMonth);
+  const setSelectedMonth = useAppStore((state) => state?.setSelectedMonth);
+  const dataByMonth = useAppStore((state) => state?.dataByMonth ?? {});
+  const monthData = selectedMonth ? dataByMonth[selectedMonth] : undefined;
 
-  const monthlyIncome = monthData?.income ?? 0
-  const setMonthlyIncome = useAppStore((state) => state?.setMonthlyIncome)
-  const [draftRenda, setDraftRenda] = useState(monthlyIncome)
-  const [isOpen, setIsOpen] = useState(false)
-  const [isOpenInstallmentExpenses, setIsOpenInstallmentExpenses] = useState(false)
+  const monthlyIncome = monthData?.income ?? 0;
+  const setMonthlyIncome = useAppStore((state) => state?.setMonthlyIncome);
+  const [draftRenda, setDraftRenda] = useState(monthlyIncome);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpenInstallmentExpenses, setIsOpenInstallmentExpenses] = useState(false);
+  const [, setIsOpenNewBorrower] = useState<boolean>(false);
 
-  const addFixedExpense = useAppStore((s) => s.addFixedExpense)
-  const addInstallmentExpense = useAppStore((s) => s.addInstallmentExpense)
-  const expenses = monthData?.fixedExpenses ?? []
-  const installmentExpenses = monthData?.installmentExpenses ?? []
+  const addFixedExpense = useAppStore((s) => s.addFixedExpense);
+  const addInstallmentExpense = useAppStore((s) => s.addInstallmentExpense);
+  const expenses = monthData?.fixedExpenses ?? [];
+  const installmentExpenses = monthData?.installmentExpenses ?? [];
 
-  const totalFixedExpenses = useAppStore.getState().calculateTotalExpenses?.() ?? 0
+  const totalFixedExpenses = useAppStore.getState().calculateTotalExpenses?.() ?? 0;
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const date = new Date()
@@ -256,6 +257,13 @@ const Home: React.FC = () => {
         <h3 style={{ fontSize: '2rem', color: monthlyIncome - totalFixedExpenses < 0 ? 'red': '#1976d2' }}>
           R$ {(monthlyIncome - totalFixedExpenses).toFixed(2)}
         </h3>
+      </Card>
+
+      <Card>
+        <Title>Devedores</Title>
+
+        <Button onClick={() => setIsOpenNewBorrower(true)}>Adicionar Devedor</Button>
+
       </Card>
     </Container>
   )
