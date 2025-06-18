@@ -70,22 +70,38 @@ export const useAppStore = create<AppState>()(
       setUser: (user) => set({ user }),
       clearUser: () => set({ user: null }),
 
-      selectedMonth: new Date().toISOString().slice(0, 7), // Formato: YYYY-MM
-      setSelectedMonth: (month) => set({ selectedMonth: month }),
+      selectedMonth: new Date().toISOString().slice(0, 7),
+      setSelectedMonth: (month) => {
+        const { dataByMonth } = get();
+        set({
+          selectedMonth: month,
+          dataByMonth: {
+            ...dataByMonth,
+            [month]: dataByMonth[month] ?? {
+              income: 0,
+              fixedExpenses: [],
+              installmentExpenses: [],
+            },
+          },
+        });
+      },
 
       dataByMonth: {},
 
       setMonthlyIncome: (income) => {
         const { selectedMonth, dataByMonth } = get();
-        const monthData = dataByMonth[selectedMonth] || {
-          income: 0,
-          fixedExpenses: [],
-          installmentExpenses: [],
+        const existing = dataByMonth[selectedMonth];
+
+        const monthData: MonthlyData = {
+          income,
+          fixedExpenses: existing?.fixedExpenses ? [...existing.fixedExpenses] : [],
+          installmentExpenses: existing?.installmentExpenses ? [...existing.installmentExpenses] : [],
         };
+
         set({
           dataByMonth: {
             ...dataByMonth,
-            [selectedMonth]: { ...monthData, income },
+            [selectedMonth]: monthData,
           },
         });
       },
@@ -98,10 +114,9 @@ export const useAppStore = create<AppState>()(
           installmentExpenses: [],
         };
 
-        // Gerar ID incremental (como string)
         const nextId = monthData.fixedExpenses.length
           ? (Math.max(...monthData.fixedExpenses.map((e) => parseInt(e.id))) + 1).toString()
-          : '1'; // Começa em 1 se não houver despesas ainda, e garante que seja string
+          : '1';
 
         const newExpense = { ...expense, id: nextId };
 
@@ -116,7 +131,7 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      addInstallmentExpense: (expense: Omit<InstallmentExpense, 'id'>) => {
+      addInstallmentExpense: (expense) => {
         const { selectedMonth, dataByMonth } = get();
         const monthData = dataByMonth[selectedMonth] || {
           income: 0,
@@ -147,18 +162,15 @@ export const useAppStore = create<AppState>()(
         const monthData = dataByMonth[m];
         if (!monthData) return 0;
 
-        // Soma todas as despesas fixas
         const totalFixed = monthData.fixedExpenses.reduce((sum, e) => sum + e.value, 0);
-
         const totalInstallmentExpenses = monthData.installmentExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-        // Retorna a soma total das despesas fixas
         return totalFixed + totalInstallmentExpenses;
       },
     }),
     {
       name: 'app-session',
-      storage: localStorageAdapter, // Usando o adaptador de storage
+      storage: localStorageAdapter,
     }
   )
 );

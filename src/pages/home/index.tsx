@@ -15,7 +15,7 @@ const Home: React.FC = () => {
   const [draftRenda, setDraftRenda] = useState(monthlyIncome);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isOpenInstallmentExpenses, setIsOpenInstallmentExpenses] = useState(false);
-  const [isOpenNewBorrower, setIsOpenNewBorrower] = useState<boolean>(false);
+  const [, setIsOpenNewBorrower] = useState<boolean>(false);
 
   const addFixedExpense = useAppStore((s) => s.addFixedExpense);
   const addInstallmentExpense = useAppStore((s) => s.addInstallmentExpense);
