@@ -92,3 +92,8 @@ export const ProgressFill = styled('div', {
     height: '100%',
     backgroundColor: '#1976d2',
 });
+
+export const FormGroup = styled('div', {
+    display: 'flex',
+    gap: '20px'
+})

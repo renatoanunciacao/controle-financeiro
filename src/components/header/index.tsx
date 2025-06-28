@@ -18,7 +18,7 @@ const Header: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
   const handleLogout = () => {
     clearUser();
-    navigate('/login');
+    navigate('/finances/login');
   };
 
   if (!user) return null;

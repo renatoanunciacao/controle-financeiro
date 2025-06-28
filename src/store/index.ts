@@ -23,7 +23,7 @@ type User = {
 };
 
 type FixedExpense = {
-  id: string; // ID como string
+  id: string;
   name: string;
   value: number;
   dueDate: string;
@@ -44,7 +44,23 @@ type MonthlyData = {
   income: number;
   fixedExpenses: FixedExpense[];
   installmentExpenses: InstallmentExpense[];
+  borrowers: Borrower[];
 };
+
+type Borrower = {
+  id: string;
+  name: string;
+  debts: {
+    expenseId: string;         // ID da despesa parcelada
+    cardName: string;          // Nome do cartão usado
+    totalAmount: number;       // Valor total da compra
+    installmentAmount: number; // Valor da parcela mensal
+    totalInstallments: number; // Parcelas totais
+    currentInstallment: number;// Parcela atual
+    dueDate: string;           // Data de vencimento
+  }[];
+};
+
 
 type AppState = {
   user: User | null;
@@ -57,8 +73,22 @@ type AppState = {
   dataByMonth: Record<string, MonthlyData>;
   setMonthlyIncome: (value: number) => void;
   addFixedExpense: (expense: Omit<FixedExpense, 'id'>) => void; // Omit 'id' from the argument
-  addInstallmentExpense: (expense: Omit<InstallmentExpense, 'id'>) => void;
+  addInstallmentExpense: (expense: InstallmentExpense) => void;
   calculateTotalExpenses: (month?: string) => number;
+  
+  addBorrower: (borrower: Borrower) => void;
+  addBorrowerDebt: (
+    borrowerId: string,
+    debt: {
+      expenseId: string;
+      cardName: string;
+      totalAmount: number;
+      installmentAmount: number;
+      totalInstallments: number;
+      currentInstallment: number;
+      dueDate: string;
+    }
+  ) => void;
 };
 
 const localStorageAdapter = createStorageAdapter<AppState>(localStorage);
@@ -72,7 +102,8 @@ export const useAppStore = create<AppState>()(
 
       selectedMonth: new Date().toISOString().slice(0, 7),
       setSelectedMonth: (month) => {
-        const { dataByMonth } = get();
+        const { selectedMonth, dataByMonth } = get();
+        if (selectedMonth === month) return; 
         set({
           selectedMonth: month,
           dataByMonth: {
@@ -81,6 +112,7 @@ export const useAppStore = create<AppState>()(
               income: 0,
               fixedExpenses: [],
               installmentExpenses: [],
+              borrowers: []
             },
           },
         });
@@ -91,11 +123,13 @@ export const useAppStore = create<AppState>()(
       setMonthlyIncome: (income) => {
         const { selectedMonth, dataByMonth } = get();
         const existing = dataByMonth[selectedMonth];
-
+        if (existing?.income === income) return;
+        
         const monthData: MonthlyData = {
           income,
           fixedExpenses: existing?.fixedExpenses ? [...existing.fixedExpenses] : [],
           installmentExpenses: existing?.installmentExpenses ? [...existing.installmentExpenses] : [],
+          borrowers: existing?.borrowers ?? [],
         };
 
         set({
@@ -112,6 +146,7 @@ export const useAppStore = create<AppState>()(
           income: 0,
           fixedExpenses: [],
           installmentExpenses: [],
+          borrowers: [],
         };
 
         const nextId = monthData.fixedExpenses.length
@@ -137,13 +172,10 @@ export const useAppStore = create<AppState>()(
           income: 0,
           fixedExpenses: [],
           installmentExpenses: [],
+          borrowers: [],
         };
 
-        const nextId = monthData.installmentExpenses.length
-          ? Math.max(...monthData.installmentExpenses.map((e) => +e.id)) + 1
-          : 1;
-
-        const newExpense: InstallmentExpense = { ...expense, id: nextId.toString() };
+       const newExpense: InstallmentExpense = { ...expense };
 
         set({
           dataByMonth: {
@@ -167,6 +199,63 @@ export const useAppStore = create<AppState>()(
 
         return totalFixed + totalInstallmentExpenses;
       },
+
+      addBorrower: (borrower: Borrower) => {
+        const { selectedMonth, dataByMonth } = get();
+        const monthData = dataByMonth[selectedMonth] ?? {
+          income: 0,
+          fixedExpenses: [],
+          installmentExpenses: [],
+          borrowers: [],
+        };
+
+        const newBorrower: Borrower = {
+          ...borrower,
+          debts: [],
+        };
+
+        set({
+          dataByMonth: {
+            ...dataByMonth,
+            [selectedMonth]: {
+              ...monthData,
+              borrowers: [...monthData.borrowers, newBorrower],
+            },
+          },
+        });
+      },
+
+      addBorrowerDebt: (borrowerId, debt) => {
+        const { selectedMonth, dataByMonth } = get();
+        const monthData = dataByMonth[selectedMonth] ?? {
+          income: 0,
+          fixedExpenses: [],
+          installmentExpenses: [],
+          borrowers: [],
+        };
+
+        const borrowers = monthData.borrowers ?? [];
+        const updatedBorrowers = borrowers.map((b) => {
+          if (b.id === borrowerId) {
+            return {
+              ...b,
+              debts: [...(b.debts ?? []), debt],
+            };
+          }
+          return b;
+        });
+
+        set({
+          dataByMonth: {
+            ...dataByMonth,
+            [selectedMonth]: {
+              ...monthData,
+              borrowers: updatedBorrowers,
+            },
+          },
+        });
+      }
+
     }),
     {
       name: 'app-session',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Button, Card, Container, Form, ProgressBar, ProgressFill, Select, Title } from './styles'
+import { Button, Card, Container, Form, FormGroup, ProgressBar, ProgressFill, Select, Title } from './styles'
 import { InputField } from '../../components/InputField'
 import { useAppStore } from '../../store'
 import Modal from '../../components/modal'
@@ -8,21 +8,36 @@ const Home: React.FC = () => {
   const selectedMonth = useAppStore((state) => state?.selectedMonth);
   const setSelectedMonth = useAppStore((state) => state?.setSelectedMonth);
   const dataByMonth = useAppStore((state) => state?.dataByMonth ?? {});
-  const monthData = selectedMonth ? dataByMonth[selectedMonth] : undefined;
+  const addBorrowerDebt = useAppStore((s) => s.addBorrowerDebt);
+  const addBorrower = useAppStore((s) => s.addBorrower);
 
-  const monthlyIncome = monthData?.income ?? 0;
+  const monthData = dataByMonth?.[selectedMonth] ?? {
+    income: 0,
+    fixedExpenses: [],
+    installmentExpenses: [],
+    borrowers: [],
+  }
+
+  const monthlyIncome = monthData.income
   const setMonthlyIncome = useAppStore((state) => state?.setMonthlyIncome);
   const [draftRenda, setDraftRenda] = useState(monthlyIncome);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isOpenInstallmentExpenses, setIsOpenInstallmentExpenses] = useState(false);
-  const [, setIsOpenNewBorrower] = useState<boolean>(false);
+  const [showNewBorrower, setShowNewBorrower] = useState(false);
 
   const addFixedExpense = useAppStore((s) => s.addFixedExpense);
   const addInstallmentExpense = useAppStore((s) => s.addInstallmentExpense);
-  const expenses = monthData?.fixedExpenses ?? [];
-  const installmentExpenses = monthData?.installmentExpenses ?? [];
+  const expenses = monthData.fixedExpenses
+  const installmentExpenses = monthData.installmentExpenses
+  const borrowers = monthData.borrowers
 
   const totalFixedExpenses = useAppStore.getState().calculateTotalExpenses?.() ?? 0;
+
+  useEffect(() => {
+    if (monthlyIncome !== draftRenda) {
+      setDraftRenda(monthlyIncome)
+    }
+  }, [monthlyIncome])
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const date = new Date()
@@ -35,16 +50,21 @@ const Home: React.FC = () => {
   })
 
   const handleSave = () => {
-    setMonthlyIncome(draftRenda)
+    setMonthlyIncome(draftRenda);
   }
 
-  useEffect(() => {
-    if (selectedMonth && !dataByMonth[selectedMonth]) {
-      setMonthlyIncome(0)
-    }
-  }, [selectedMonth, dataByMonth, setMonthlyIncome])
 
-  if (!selectedMonth || !monthData) {
+
+
+  useEffect(() => {
+    console.log('Executou useEffect de renda');
+    const income = dataByMonth[selectedMonth]?.income ?? 0;
+    if (income !== draftRenda) {
+      setDraftRenda(income);
+    }
+  }, [selectedMonth])
+
+  if (!selectedMonth || !Array.isArray(monthData.fixedExpenses)) {
     return <p>Carregando dados do mês...</p>
   }
 
@@ -82,7 +102,7 @@ const Home: React.FC = () => {
       {/* Despesas Fixas */}
       <Card>
         <Title>Despesas Fixas</Title>
-        <div style={{     overflowY: 'scroll', scrollbarWidth: 'thin', height: '158px'}}>
+        <div style={{ overflowY: 'scroll', scrollbarWidth: 'thin', height: '158px' }}>
           {expenses.length > 0 ? (
             expenses.map((exp, i) => {
               const dueDate = new Date(exp.dueDate)
@@ -149,6 +169,7 @@ const Home: React.FC = () => {
           <InputField type="text" name="name" placeholder="Nome da despesa" required />
           <InputField type="number" name="value" placeholder="Valor da despesa" required />
           <InputField type="date" name="dueDate" required />
+
           <div style={{ display: 'flex', justifyContent: 'space-around' }}>
             <Button type="button" onClick={() => setIsOpen(false)} css={{ width: '200px' }}>
               Cancelar
@@ -163,7 +184,7 @@ const Home: React.FC = () => {
       {/* Parcelamentos */}
       <Card>
         <Title>Parcelamentos</Title>
-        {installmentExpenses.length > 0 ? (
+        {installmentExpenses?.length > 0 ? (
           installmentExpenses.map((item) => {
             const remainingMonths = item.remainingMonths ?? 0
             const totalMonths = item.totalMonths ?? 0
@@ -191,21 +212,32 @@ const Home: React.FC = () => {
         <h2>Adicionar Despesa Parcelada</h2>
         <Form
           onSubmit={(e) => {
-            e.preventDefault()
-            const formData = new FormData(e.currentTarget)
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
 
-            const name = formData.get('name') as string
-            const amount = Number(formData.get('amount'))
-            const totalMonths = Number(formData.get('totalMonths'))
-            const currentMonth = Number(formData.get('currentMonth'))
-            const cardName = formData.get('cardName') as string
-            const dueDate = formData.get('dueDate') as string
+            const name = formData.get('name') as string;
+            const amount = Number(formData.get('amount'));
+            const totalMonths = Number(formData.get('totalMonths'));
+            const currentMonth = Number(formData.get('currentMonth'));
+            const cardName = formData.get('cardName') as string;
+            const dueDate = formData.get('dueDate') as string;
+            const borrowerId = formData.get('borrowerId') as string;
+            const newBorrowerName = formData.get('newBorrowerName')?.toString().trim();
 
-            if (!name || isNaN(amount) || isNaN(totalMonths) || !cardName || !dueDate) return
+            if (
+              !name || isNaN(amount) || isNaN(totalMonths) || isNaN(currentMonth) ||
+              !cardName || !dueDate
+            ) {
+              alert("Preencha todos os campos obrigatórios.");
+              return;
+            }
 
-            const remainingMonths = totalMonths - currentMonth
+            const remainingMonths = totalMonths - currentMonth;
+            const installmentId = crypto.randomUUID();
 
+            // 1. Adiciona a despesa parcelada
             addInstallmentExpense({
+              id: installmentId,
               name,
               amount,
               totalMonths,
@@ -213,26 +245,88 @@ const Home: React.FC = () => {
               remainingMonths,
               cardName,
               dueDate,
-            })
+            });
 
-            setIsOpenInstallmentExpenses(false)
-            e.currentTarget.reset()
+            // 2. Criação de novo devedor (se necessário)
+            let finalBorrowerId = borrowerId;
+            if (borrowerId === '__novo__' && newBorrowerName) {
+              finalBorrowerId = crypto.randomUUID();
+              addBorrower({
+                id: finalBorrowerId,
+                name: newBorrowerName,
+                debts: [],
+              });
+            }
+
+            // 3. Associa dívida ao devedor (se houver)
+            if (finalBorrowerId && finalBorrowerId !== '') {
+              addBorrowerDebt(finalBorrowerId, {
+                expenseId: installmentId,
+                cardName,
+                totalAmount: amount * totalMonths,
+                installmentAmount: amount,
+                totalInstallments: totalMonths,
+                currentInstallment: currentMonth,
+                dueDate,
+              });
+            }
+
+            // Finaliza
+            setIsOpenInstallmentExpenses(false);
+            setShowNewBorrower(false);
+            e.currentTarget.reset();
           }}
         >
           <InputField type="text" name="name" placeholder="Nome da despesa" required />
           <InputField type="number" name="amount" placeholder="Valor da parcela" required />
-          <InputField type="number" name="totalMonths" placeholder="Quantidade de parcelas" required />
-          <InputField
-            type="number"
-            name="currentMonth"
-            placeholder="Parcela atual (ex: 1)"
-            min="1"
-            required
-          />
-          <InputField type="text" name="cardName" placeholder="Nome do cartão" required />
-          <InputField type="date" name="dueDate" required />
+          <FormGroup>
+            <InputField type="number" name="totalMonths" placeholder="Quantidade de parcelas" required />
+            <InputField
+              type="number"
+              name="currentMonth"
+              placeholder="Parcela atual (ex: 1)"
+              min="1"
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <InputField type="text" name="cardName" placeholder="Nome do cartão" required />
+            <InputField type="date" name="dueDate" required />
+          </FormGroup>
+
+
+          <Select
+            name="borrowerId"
+            defaultValue=""
+            onChange={(e) => setShowNewBorrower(e.target.value === '__novo__')}
+          >
+            <option value="">Sem devedor</option>
+            {borrowers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+            <option value="__novo__">+ Novo devedor</option>
+          </Select>
+
+          {showNewBorrower && (
+            <InputField
+              type="text"
+              name="newBorrowerName"
+              placeholder="Nome do novo devedor"
+              required
+            />
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-            <Button type="button" onClick={() => setIsOpenInstallmentExpenses(false)} css={{ width: '200px' }}>
+            <Button
+              type="button"
+              onClick={() => {
+                setIsOpenInstallmentExpenses(false);
+                setShowNewBorrower(false);
+              }}
+              css={{ width: '200px' }}
+            >
               Cancelar
             </Button>
             <Button type="submit" css={{ width: '200px' }}>
@@ -253,18 +347,33 @@ const Home: React.FC = () => {
       {/* Saldo após calcular todas as contas */}
       <Card>
         <Title>Sobra do salário</Title>
-        
-        <h3 style={{ fontSize: '2rem', color: monthlyIncome - totalFixedExpenses < 0 ? 'red': '#1976d2' }}>
+
+        <h3 style={{ fontSize: '2rem', color: monthlyIncome - totalFixedExpenses < 0 ? 'red' : '#1976d2' }}>
           R$ {(monthlyIncome - totalFixedExpenses).toFixed(2)}
         </h3>
       </Card>
 
       <Card>
         <Title>Devedores</Title>
-
-        <Button onClick={() => setIsOpenNewBorrower(true)}>Adicionar Devedor</Button>
-
+        {borrowers?.length > 0 ? (
+          borrowers.map((b) => (
+            <div key={b.id} style={{ marginBottom: '16px' }}>
+              <strong>{b.name}</strong>
+              <ul>
+                {b.debts?.map((d, idx) => (
+                  <li key={idx}>
+                    {d.cardName} – R$ {d.installmentAmount.toFixed(2)} x {d.totalInstallments} parcelas<br />
+                    Vencimento: {new Date(d.dueDate).toLocaleDateString()}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        ) : (
+          <p>Nenhum devedor registrado.</p>
+        )}
       </Card>
+
     </Container>
   )
 }
